@@ -5,13 +5,20 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.NumberFormat;
+import java.util.Arrays;
 import java.util.Locale;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import com.lmax.disruptor.EventFactory;
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.EventTranslatorOneArg;
+import com.lmax.disruptor.ExceptionHandler;
+import com.lmax.disruptor.FatalExceptionHandler;
+import com.lmax.disruptor.InsufficientCapacityException;
+import com.lmax.disruptor.dsl.Disruptor;
 
 /**
  * A simple StatsD client implementation facilitating metrics recording.
@@ -67,23 +74,37 @@ public final class NonBlockingStatsDClient implements StatsDClient {
         }
     };
 
+    private final static EventFactory<Event> FACTORY = new EventFactory<Event>() {
+        @Override
+        public Event newInstance() {
+            return new Event();
+        }
+    };
+
+    private static final EventTranslatorOneArg<Event,String> TRANSLATOR = new EventTranslatorOneArg<Event,String>() {
+        @Override
+        public void translateTo(Event event, long sequence, String msg) {
+            event.setValue(msg);
+        }
+    };
+
     private final String prefix;
     private final DatagramChannel clientChannel;
     private final InetSocketAddress address;
     private final StatsDClientErrorHandler handler;
     private final String constantTagsRendered;
 
-    private final ExecutorService executor = Executors.newSingleThreadExecutor(new ThreadFactory() {
+    private final ExecutorService executor = Executors.newCachedThreadPool(new ThreadFactory() {
         final ThreadFactory delegate = Executors.defaultThreadFactory();
         @Override public Thread newThread(Runnable r) {
             Thread result = delegate.newThread(r);
-            result.setName("StatsD-" + result.getName());
+            result.setName("StatsD-disruptor-" + result.getName());
             result.setDaemon(true);
             return result;
         }
     });
 
-    private final BlockingQueue<String> queue = new LinkedBlockingQueue<String>();
+    private final Disruptor<Event> disruptor = new Disruptor<Event>(FACTORY, 16384, executor);
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
@@ -182,7 +203,10 @@ public final class NonBlockingStatsDClient implements StatsDClient {
         } catch (Exception e) {
             throw new StatsDClientException("Failed to start StatsD client", e);
         }
-        this.executor.submit(new QueueConsumer());
+
+        disruptor.handleEventsWith(new Handler());
+        disruptor.handleExceptionsWith(new DisruptorExceptionHandler(this.handler));
+        disruptor.start();
     }
 
     /**
@@ -192,6 +216,7 @@ public final class NonBlockingStatsDClient implements StatsDClient {
     @Override
     public void stop() {
         try {
+            disruptor.shutdown();
             executor.shutdown();
             executor.awaitTermination(30, TimeUnit.SECONDS);
         }
@@ -438,41 +463,52 @@ public final class NonBlockingStatsDClient implements StatsDClient {
     }
 
     private void send(String message) {
-        queue.offer(message);
+        if(!disruptor.getRingBuffer().tryPublishEvent(TRANSLATOR, message)) {
+            handler.handle(InsufficientCapacityException.INSTANCE);
+        }
     }
 
-    private class QueueConsumer implements Runnable {
+    private static class Event {
+
+        private String value;
+
+        public void setValue(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "Event: " + value;
+        }
+    }
+
+    private class Handler implements EventHandler<Event> {
+
         private final ByteBuffer sendBuffer = ByteBuffer.allocate(PACKET_SIZE_BYTES);
 
-        @Override public void run() {
-            while(!executor.isShutdown()) {
-                try {
-                    String message = queue.poll(1, TimeUnit.SECONDS);
-                    if(null != message) {
-                        byte[] data = message.getBytes();
-                        if(sendBuffer.remaining() < (data.length + 1)) {
-                            blockingSend();
-                        }
-                        if(sendBuffer.position() > 0) {
-                            sendBuffer.put( (byte) '\n');
-                        }
-                        sendBuffer.put(data);
-                        if(null == queue.peek()) {
-                            blockingSend();
-                        }
-                    }
-                } catch (Exception e) {
-                    handler.handle(e);
-                }
+        @Override
+        public void onEvent(Event event, long sequence, boolean batchEnd) throws Exception {
+            String message = event.value;
+            byte[] data = message.getBytes();
+            if(sendBuffer.remaining() < (data.length + 1)) {
+                flush();
+            }
+            if(sendBuffer.position() > 0) {
+                sendBuffer.put( (byte) '\n');
+            }
+            sendBuffer.put(
+                    data.length > sendBuffer.remaining() ? Arrays.copyOfRange(data, 0, sendBuffer.remaining()) : data);
+
+            if(batchEnd || 0 == sendBuffer.remaining()) {
+                flush();
             }
         }
 
-        private void blockingSend() throws IOException {
+        private void flush() throws IOException {
             int sizeOfBuffer = sendBuffer.position();
             sendBuffer.flip();
             int sentBytes = clientChannel.send(sendBuffer, address);
-            sendBuffer.limit(sendBuffer.capacity());
-            sendBuffer.rewind();
+            sendBuffer.clear();
 
             if (sizeOfBuffer != sentBytes) {
                 handler.handle(
@@ -484,6 +520,43 @@ public final class NonBlockingStatsDClient implements StatsDClient {
                                 address.getPort(),
                                 sentBytes,
                                 sizeOfBuffer)));
+            }
+        }
+    }
+
+    private static class DisruptorExceptionHandler implements ExceptionHandler {
+
+        private final FatalExceptionHandler throwableHandler = new FatalExceptionHandler();
+        private final StatsDClientErrorHandler exceptionHandler;
+
+        public DisruptorExceptionHandler(StatsDClientErrorHandler handler) {
+           this.exceptionHandler = handler;
+        }
+
+        @Override
+        public void handleEventException(Throwable ex, long sequence, Object event) {
+            if(ex instanceof Exception) {
+                exceptionHandler.handle((Exception) ex);
+            } else {
+                throwableHandler.handleEventException(ex, sequence, event);
+            }
+        }
+
+        @Override
+        public void handleOnStartException(Throwable ex) {
+            if(ex instanceof Exception) {
+                exceptionHandler.handle((Exception) ex);
+            } else {
+                throwableHandler.handleOnStartException(ex);
+            }
+        }
+
+        @Override
+        public void handleOnShutdownException(Throwable ex) {
+            if(ex instanceof Exception) {
+                exceptionHandler.handle((Exception) ex);
+            } else {
+                throwableHandler.handleOnShutdownException(ex);
             }
         }
     }
