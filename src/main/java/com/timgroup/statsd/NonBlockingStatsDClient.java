@@ -19,6 +19,7 @@ import com.lmax.disruptor.ExceptionHandler;
 import com.lmax.disruptor.FatalExceptionHandler;
 import com.lmax.disruptor.InsufficientCapacityException;
 import com.lmax.disruptor.dsl.Disruptor;
+import com.lmax.disruptor.util.Util;
 
 /**
  * A simple StatsD client implementation facilitating metrics recording.
@@ -45,11 +46,14 @@ import com.lmax.disruptor.dsl.Disruptor;
  * on any StatsD clients.</p>
  *
  * @author Tom Denley
+ * @author mick semb wever
  *
  */
 public final class NonBlockingStatsDClient implements StatsDClient {
 
     private static final int PACKET_SIZE_BYTES = 1500;
+    private static final int RINGBUFFER_DEFAULT_SIZE = 16384;
+    private static final int RINGBUFFER_MIN_SIZE = 128;
 
     private static final StatsDClientErrorHandler NO_OP_HANDLER = new StatsDClientErrorHandler() {
         @Override public void handle(Exception e) { /* No-op */ }
@@ -104,7 +108,7 @@ public final class NonBlockingStatsDClient implements StatsDClient {
         }
     });
 
-    private final Disruptor<Event> disruptor = new Disruptor<Event>(FACTORY, 16384, executor);
+    private final Disruptor<Event> disruptor = new Disruptor<Event>(FACTORY, calculateRingBufferSize(), executor);
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
@@ -466,6 +470,32 @@ public final class NonBlockingStatsDClient implements StatsDClient {
         if(!disruptor.getRingBuffer().tryPublishEvent(TRANSLATOR, message)) {
             handler.handle(InsufficientCapacityException.INSTANCE);
         }
+    }
+
+    private static int calculateRingBufferSize() {
+        int ringBufferSize = RINGBUFFER_DEFAULT_SIZE;
+
+        String userPreferredRBSize = System.getProperty(
+                "NonBlockingStatsDClient.ringBufferSize",
+                String.valueOf(RINGBUFFER_DEFAULT_SIZE));
+
+        try {
+            ringBufferSize = Integer.parseInt(userPreferredRBSize);
+            if (ringBufferSize < RINGBUFFER_MIN_SIZE) {
+                ringBufferSize = RINGBUFFER_MIN_SIZE;
+
+                LOGGER.warn(
+                        "Invalid RingBufferSize {}, using minimum size {}.",
+                        userPreferredRBSize,
+                        RINGBUFFER_MIN_SIZE);
+            }
+        } catch (NumberFormatException ex) {
+            LOGGER.warn(
+                    "Invalid RingBufferSize {}, using default size {}.",
+                    userPreferredRBSize,
+                    RINGBUFFER_DEFAULT_SIZE);
+        }
+        return Util.ceilingNextPowerOfTwo(ringBufferSize);
     }
 
     private static class Event {
