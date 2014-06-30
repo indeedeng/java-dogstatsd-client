@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.EventHandler;
@@ -54,6 +55,8 @@ public final class NonBlockingStatsDClient implements StatsDClient {
     private static final int PACKET_SIZE_BYTES = 1500;
     private static final int RINGBUFFER_DEFAULT_SIZE = 16384;
     private static final int RINGBUFFER_MIN_SIZE = 128;
+
+    private final static Logger LOG = Logger.getLogger(NonBlockingStatsDClient.class.getName());
 
     private static final StatsDClientErrorHandler NO_OP_HANDLER = new StatsDClientErrorHandler() {
         @Override public void handle(Exception e) { /* No-op */ }
@@ -484,16 +487,16 @@ public final class NonBlockingStatsDClient implements StatsDClient {
             if (ringBufferSize < RINGBUFFER_MIN_SIZE) {
                 ringBufferSize = RINGBUFFER_MIN_SIZE;
 
-                LOGGER.warn(
+                LOG.warning(String.format(
                         "Invalid RingBufferSize {}, using minimum size {}.",
                         userPreferredRBSize,
-                        RINGBUFFER_MIN_SIZE);
+                        RINGBUFFER_MIN_SIZE));
             }
         } catch (NumberFormatException ex) {
-            LOGGER.warn(
+            LOG.warning(String.format(
                     "Invalid RingBufferSize {}, using default size {}.",
                     userPreferredRBSize,
-                    RINGBUFFER_DEFAULT_SIZE);
+                    RINGBUFFER_DEFAULT_SIZE));
         }
         return Util.ceilingNextPowerOfTwo(ringBufferSize);
     }
