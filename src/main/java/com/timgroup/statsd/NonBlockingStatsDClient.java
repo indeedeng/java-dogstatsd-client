@@ -48,7 +48,7 @@ public final class NonBlockingStatsDClient extends BlockingStatsDClient {
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot
@@ -71,7 +71,7 @@ public final class NonBlockingStatsDClient extends BlockingStatsDClient {
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot
@@ -96,7 +96,7 @@ public final class NonBlockingStatsDClient extends BlockingStatsDClient {
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot

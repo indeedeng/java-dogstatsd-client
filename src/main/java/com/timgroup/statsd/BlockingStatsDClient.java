@@ -82,7 +82,7 @@ public class BlockingStatsDClient implements StatsDClient {
     
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot
@@ -105,7 +105,7 @@ public class BlockingStatsDClient implements StatsDClient {
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot
@@ -130,7 +130,7 @@ public class BlockingStatsDClient implements StatsDClient {
 
     /**
      * Create a new StatsD client communicating with a StatsD instance on the
-     * specified host and port. All messages send via this client will have
+     * specified host and port. All messages sent via this client will have
      * their keys prefixed with the specified string. The new client will
      * attempt to open a connection to the StatsD server immediately upon
      * instantiation, and may throw an exception if that a connection cannot
@@ -265,7 +265,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Adjusts the specified counter by a given delta.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the counter to adjust
@@ -282,7 +282,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Increments the specified counter by one.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the counter to increment
@@ -305,7 +305,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Decrements the specified counter by one.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the counter to decrement
@@ -328,7 +328,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Records the latest fixed value for the specified named gauge.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the gauge
@@ -356,7 +356,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Records the latest fixed value for the specified named gauge.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the gauge
@@ -381,7 +381,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Records an execution time in milliseconds for the specified named operation.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the timed operation
@@ -406,7 +406,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Records a value for the specified named histogram.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the histogram
@@ -433,7 +433,7 @@ public class BlockingStatsDClient implements StatsDClient {
     /**
      * Records a value for the specified named histogram.
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param aspect
      *     the name of the histogram
@@ -491,7 +491,7 @@ public class BlockingStatsDClient implements StatsDClient {
      *
      * <p>This method is a DataDog extension, and may not work with other servers.</p>
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param event
      *     The event to record
@@ -513,7 +513,7 @@ public class BlockingStatsDClient implements StatsDClient {
      *
      * <p>This method is a DataDog extension, and may not work with other servers.</p>
      *
-     * <p>This method is non-blocking and is guaranteed not to throw an exception.</p>
+     * <p>This method is guaranteed not to throw an exception.</p>
      *
      * @param sc
      *     the service check object
