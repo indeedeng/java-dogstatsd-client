@@ -52,10 +52,6 @@ public final class NonBlockingStatsDClient implements StatsDClient {
 
     private static final int PACKET_SIZE_BYTES = 1500;
 
-    private static final StatsDClientErrorHandler NO_OP_HANDLER = new StatsDClientErrorHandler() {
-        @Override public void handle(final Exception e) { /* No-op */ }
-    };
-
     /**
      * Because NumberFormat is not thread-safe we cannot share instances across threads. Use a ThreadLocal to
      * create one pre thread as this seems to offer a significant performance improvement over creating one per-thread:
@@ -208,7 +204,7 @@ public final class NonBlockingStatsDClient implements StatsDClient {
             this.prefix = "";
         }
         if(errorHandler == null) {
-            handler = NO_OP_HANDLER;
+            handler = StatsDClientErrorHandler.NO_OP_HANDLER;
         }
         else {
             handler = errorHandler;

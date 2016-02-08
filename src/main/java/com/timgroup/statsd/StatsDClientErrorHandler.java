@@ -16,4 +16,7 @@ public interface StatsDClientErrorHandler {
      */
     void handle(Exception exception);
 
+    StatsDClientErrorHandler NO_OP_HANDLER = new StatsDClientErrorHandler() {
+        @Override public void handle(final Exception e) { /* No-op */ }
+    };
 }
