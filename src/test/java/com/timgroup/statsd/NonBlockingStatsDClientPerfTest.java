@@ -1,14 +1,15 @@
 package com.timgroup.statsd;
 
 
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.net.SocketException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
