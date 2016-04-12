@@ -177,13 +177,24 @@ public final class NonBlockingStatsDClient extends BlockingStatsDClient {
     }
 
     private class QueueConsumer implements Runnable {
+        private boolean canAddChunk(String message, String chunk) {
+            return message.getBytes(MESSAGE_CHARSET).length + chunk.getBytes(MESSAGE_CHARSET).length + "\n".getBytes(MESSAGE_CHARSET).length < PACKET_SIZE_BYTES;
+        }
+
         @Override public void run() {
             while(!executor.isShutdown()) {
                 try {
                     if (queue.peek() == null) {
                         Thread.sleep(10);
                     } else {
-                        blockingSend(queue.take());
+                        String message = "";
+                        do {
+                            if (message.length() > 0)
+                                message += "\n";
+                            message += queue.take();
+                        } while (queue.peek() != null && canAddChunk(message, queue.peek()));
+
+                        blockingSend(message);
                     }
                 } catch (final Exception e) {
                     handler.handle(e);

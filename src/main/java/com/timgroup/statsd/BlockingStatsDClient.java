@@ -44,7 +44,7 @@ import java.util.concurrent.Callable;
  */
 public class BlockingStatsDClient implements StatsDClient {
 
-    private static final int PACKET_SIZE_BYTES = 1500;
+    protected static final int PACKET_SIZE_BYTES = 1500;
 
     /**
      * Because NumberFormat is not thread-safe we cannot share instances across threads. Use a ThreadLocal to
