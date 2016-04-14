@@ -121,7 +121,7 @@ public final class NonBlockingStatsDClient implements StatsDClient {
      *     if the client could not be started
      */
     public NonBlockingStatsDClient(final String prefix, final String hostname, final int port) throws StatsDClientException {
-        this(prefix, hostname, port, Integer.MAX_VALUE);
+        this(prefix, hostname, port, 10000);
     }
 
     /**
