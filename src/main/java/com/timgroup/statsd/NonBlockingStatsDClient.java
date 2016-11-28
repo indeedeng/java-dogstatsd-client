@@ -51,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 public final class NonBlockingStatsDClient implements StatsDClient {
 
     private static final int PACKET_SIZE_BYTES = 1500;
+    private static final int DEFAULT_QUEUE_SIZE = 10000;
 
     private static final StatsDClientErrorHandler NO_OP_HANDLER = new StatsDClientErrorHandler() {
         @Override public void handle(final Exception e) { /* No-op */ }
@@ -121,7 +122,7 @@ public final class NonBlockingStatsDClient implements StatsDClient {
      *     if the client could not be started
      */
     public NonBlockingStatsDClient(final String prefix, final String hostname, final int port) throws StatsDClientException {
-        this(prefix, hostname, port, Integer.MAX_VALUE);
+        this(prefix, hostname, port, DEFAULT_QUEUE_SIZE);
     }
 
     /**
